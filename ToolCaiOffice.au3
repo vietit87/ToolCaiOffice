@@ -2,10 +2,10 @@
 
 #Region ;**** Directives created by AutoIt3Wrapper_GUI ****
 #AutoIt3Wrapper_Icon=o.ico
-#AutoIt3Wrapper_Res_Description=ToolCaiOffice_v1.1 ; Tên hiển thị trong Task Manager
-#AutoIt3Wrapper_Outfile=ToolCaiOffice_v1.1.exe ; Tên file đầu ra (.exe) cho ứng dụng
-#AutoIt3Wrapper_Res_Fileversion=1.1.0.0
-#AutoIt3Wrapper_Res_Companyname=Copyright@lqviet_24.09.2025
+#AutoIt3Wrapper_Res_Description=ToolCaiOffice_v1.2 ; Tên hiển thị trong Task Manager
+#AutoIt3Wrapper_Outfile=ToolCaiOffice_v1.2.exe ; Tên file đầu ra (.exe) cho ứng dụng
+#AutoIt3Wrapper_Res_Fileversion=1.2.0.0
+#AutoIt3Wrapper_Res_Companyname=Copyright@lqviet_29.09.2025
 #AutoIt3Wrapper_Res_Language=1066 ; Vietnamese
 #AutoIt3Wrapper_Run_Obfuscator=y  ; Sử dụng bộ làm rối mã nguồn
 #AutoIt3Wrapper_UseUpx=y   ; Sử dụng công cụ UPX để nén file .exe
@@ -33,7 +33,7 @@ Global $ACHKAPP[UBound($AOFFICEAPPS)]
 ; ==================== GUI ====================
 Func CaiOffice()
 	#RequireAdmin
-    Local $HGUI = GUICreate("Cài đặt Office Online cho Win 10 và Win 11 v1.1", 520, 400)
+    Local $HGUI = GUICreate("Cài đặt Office Online cho Win 10 và Win 11 v1.2", 520, 400)
 
     ; ==== Label giới thiệu tác giả ====
     Local $LBLAUTHOR = GUICtrlCreateLabel("Phát triển bởi Lê Quốc Việt", 20, 10, 480, 20)
@@ -91,10 +91,11 @@ Func CaiOffice()
     GUICtrlSetData($CMBLANGUAGE, "en-us|en-gb|vi-vn|fr-fr|de-de|ja-jp", "en-us")
 
     ; ==== Nút ====
-    Local $BTNSELECTALL   = GUICtrlCreateButton("📝 Chọn tất cả", 40, 330, 120, 30)
-    Local $BTNINSTALL     = GUICtrlCreateButton("▶ Cài đặt", 200, 330, 120, 30)
+    Local $BTNSELECTALL   = GUICtrlCreateButton("📝 Chọn tất cả", 20, 340, 110, 30)
+    Local $BTNINSTALL     = GUICtrlCreateButton("▶ Cài đặt", 150, 340, 100, 30)
 	GUICtrlSetBkColor($BTNINSTALL, 0xFFA500) ; Cam
-    Local $BTNSHORTCUTS   = GUICtrlCreateButton("🖥️ Tạo shortcut", 360, 330, 120, 30)
+    Local $BTNSHORTCUTS   = GUICtrlCreateButton("🖥️ Tạo shortcut", 260, 340, 110, 30)
+    Local $BTNREMOVE      = GUICtrlCreateButton("❌ Gỡ Office", 390, 340, 110, 30)
 
     ; ==== Trạng thái ====
     Local $LBLSTATUS = GUICtrlCreateLabel("", 20, 370, 480, 20)
@@ -121,9 +122,22 @@ Func CaiOffice()
                 Else
                     GUICtrlSetData($LBLSTATUS, "❌ Cài đặt thất bại. Mã: " & $RES)
                 EndIf
-            Case $BTNSHORTCUTS
-                _CREATESHORTCUTS()
-                GUICtrlSetData($LBLSTATUS, "🖥️ Đã tạo shortcut trên Desktop.")
+			Case $BTNSHORTCUTS
+				_CREATESHORTCUTS($ACHKAPP, $AOFFICEAPPS)
+				GUICtrlSetData($LBLSTATUS, "🖥️ Shortcut đã được tạo trên Desktop cho ứng dụng đã chọn.")
+
+            Case $BTNREMOVE
+                GUICtrlSetData($LBLSTATUS, "⬇️ Đang tải HiBitUninstaller...")
+                Local $HIBIT = @ScriptDir & "\HiBitUninstaller.exe"
+                If Not FileExists($HIBIT) Then
+                    InetGet("https://github.com/vietit87/Chuc_Nang/raw/refs/heads/main/HiBitUninstaller.exe", $HIBIT, 1, 0)
+                EndIf
+                If FileExists($HIBIT) Then
+                    Run($HIBIT)
+                    GUICtrlSetData($LBLSTATUS, "✅ Mở HiBitUninstaller để gỡ Office.")
+                Else
+                    GUICtrlSetData($LBLSTATUS, "❌ Không tải được HiBitUninstaller!")
+                EndIf
         EndSwitch
     WEnd
 EndFunc
@@ -318,10 +332,16 @@ Func _CHECK_WINDOWS()
     EndIf
 EndFunc
 
-; ==== Hàm tạo shortcut ====
-Func _CREATESHORTCUTS()
-    Local $SCMD = 'cmd /c COPY /Y "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\*.lnk" "%AllUsersProfile%\Desktop"'
-    RunWait($SCMD, "", @SW_HIDE)
+; ==== Hàm tạo shortcut cho các app đã chọn ====
+Func _CREATESHORTCUTS(ByRef $ACHKAPP, ByRef $AOFFICEAPPS)
+    For $I = 0 To UBound($AOFFICEAPPS) - 1
+        If GUICtrlRead($ACHKAPP[$I]) = $GUI_CHECKED Then
+            ; Tạo pattern tên app, ví dụ "Word.lnk", "Excel.lnk"...
+            Local $SPATTERN = '"' & "C:\ProgramData\Microsoft\Windows\Start Menu\Programs\" & $AOFFICEAPPS[$I] & "*.lnk" & '"'
+            Local $SCMD = 'cmd /c COPY /Y ' & $SPATTERN & ' "%AllUsersProfile%\Desktop"'
+            RunWait($SCMD, "", @SW_HIDE)
+        EndIf
+    Next
 EndFunc
 
 Func _REMOVEXML()
